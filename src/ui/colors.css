@@ -1,10 +1,10 @@
 :root {
-  --bg-main: #F8F3D9;
-  --bg-list: #EBE5C2;
-  --bg-hover: #DED8B4;
-  --bg-navbar: #B9B28A;
-  --accent-highlight: #504B38;
-  --text-on-dark: #F8F3D9;
+  --bg-main: #F2F6F3;
+  --bg-list: #E3ECE6;
+  --bg-hover: #D2E0D7;
+  --bg-navbar: #B5C9BD;
+  --accent-highlight: #243B31;
+  --text-on-dark: #F2F6F3;
 }
 
 /* Page Background */
