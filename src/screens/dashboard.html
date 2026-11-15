@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Complaint Box — Issue Ledger</title>
+
+    <!-- Bootstrap 5.3 Grid & Layout Utilities -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Custom Design System CSS Files -->
+    <link rel="stylesheet" href="/src/ui/typography.css">
+    <link rel="stylesheet" href="/src/ui/colors.css">
+    <link rel="stylesheet" href="/src/ui/buttons.css">
+
+    <style>
+        /* Prevent blinking text cursor on non-editable elements */
+        * {
+            caret-color: transparent;
+        }
+
+        input,
+        textarea,
+        select,
+        [contenteditable="true"] {
+            caret-color: var(--accent-highlight);
+            user-select: text;
+        }
+
+        /* Base Layout using typography.css & colors.css */
+        body {
+            font-family: var(--font-2);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 58px; /* Space for fixed top navbar */
+            user-select: none;
+        }
+
+        .complaint-title,
+        .complaint-meta {
+            user-select: text;
+        }
+
+        /* Fixed Top Navbar & Reduced Navbar Font Size */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 58px;
+            z-index: 1030;
+            font-size: 0.84rem;
+            padding: 0 1.25rem;
+        }
+
+        .top-navbar .navbar-brand {
+            font-family: var(--font-1);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-highlight);
+            text-decoration: none;
+            letter-spacing: -0.01em;
+        }
+
+        .brand-badge {
+            background-color: var(--accent-highlight);
+            color: var(--text-on-dark);
+            font-family: var(--font-3);
+            font-size: 0.75rem;
+            padding: 0.2rem 0.45rem;
+            border-radius: 6px;
+        }
+
+        /* Compact Navbar Controls */
+        .top-navbar .btn-search-bar {
+            height: 34px;
+            min-width: 210px;
+            max-width: 340px;
+            font-size: 0.82rem;
+            padding: 0 0.9rem;
+        }
+
+        .top-navbar .btn-search-bar input {
+            font-size: 0.82rem;
+        }
+
+        /* Circular corners for Login button */
+        .btn-circular-pill {
+            border-radius: 9999px !important;
+        }
+
+        .top-navbar .btn-rect-curved {
+            font-size: 0.82rem;
+            padding: 0.35rem 1.05rem;
+            height: 34px;
+        }
+
+        .top-navbar .btn-circle {
+            width: 34px;
+            height: 34px;
+            position: relative;
+        }
+
+        /* Unread Notification Indicator Dot (Controlled by #notifToggle) */
+        .notif-badge-dot {
+            position: absolute;
+            top: 6px;
+            right: 7px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #b91c1c;
+            border: 1px solid var(--bg-list);
+            display: none;
+        }
+
+        #notifToggle:checked ~ .top-navbar .notif-badge-dot {
+            display: block;
+        }
+
+        /* Pure HTML/CSS Auth State Switch (Ready for PHP Session Replacement) */
+        .logged-in-only {
+            display: none;
+        }
+
+        #authStateToggle:checked ~ .top-navbar .logged-out-only,
+        body.is-logged-in .logged-out-only {
+            display: none !important;
+        }
+
+        #authStateToggle:checked ~ .top-navbar .logged-in-only,
+        body.is-logged-in .logged-in-only {
+            display: inline-flex !important;
+        }
+
+        .auth-preview-label {
+            font-size: 0.72rem;
+            padding: 0.22rem 0.6rem;
+            border-radius: 9999px;
+            border: 1px dashed rgba(80, 75, 56, 0.45);
+            color: var(--accent-highlight);
+            cursor: pointer;
+            opacity: 0.85;
+        }
+
+        .auth-preview-label:hover {
+            background-color: var(--bg-hover);
+            opacity: 1;
+        }
+
+        /* Left Floating Dock */
+        .left-dock {
+            position: fixed;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1025;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.6rem;
+            border-radius: 16px;
+            border: 1px solid rgba(80, 75, 56, 0.25);
+            box-shadow: 0 8px 24px rgba(80, 75, 56, 0.16);
+        }
+
+        .left-dock .dock-item {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            position: relative;
+        }
+
+        .left-dock .dock-item:hover {
+            transform: translateX(2px) scale(1.05);
+        }
+
+        /* Pure-CSS Hover Tooltips for Dock Icons */
+        .left-dock .dock-item::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: calc(100% + 10px);
+            top: 50%;
+            transform: translateY(-50%) translateX(-4px);
+            background-color: var(--accent-highlight);
+            color: var(--text-on-dark);
+            font-family: var(--font-2);
+            font-size: 0.76rem;
+            font-weight: 600;
+            white-space: nowrap;
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            box-shadow: 0 4px 12px rgba(80, 75, 56, 0.2);
+        }
+
+        .left-dock .dock-item:hover::after {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        /* Emergency Dock Icon Emphasis */
+        .dock-emergency {
+            background-color: #8b261d;
+            color: var(--text-on-dark);
+            border-color: #6e1c15;
+        }
+
+        .dock-emergency:hover {
+            background-color: #731e16;
+            color: var(--text-on-dark);
+            border-color: #5a150f;
+        }
+
+        /* Notification Dock Toggle States (Default ON via #notifToggle:checked) */
+        .dock-notif .icon-notif-on,
+        .dock-notif .icon-notif-off {
+            display: none;
+        }
+
+        /* When ON (checked) */
+        #notifToggle:checked ~ .left-dock .dock-notif {
+            background-color: var(--accent-highlight);
+            color: var(--text-on-dark);
+            border-color: var(--accent-highlight);
+        }
+
+        #notifToggle:checked ~ .left-dock .dock-notif:hover {
+            opacity: 0.92;
+        }
+
+        #notifToggle:checked ~ .left-dock .dock-notif .icon-notif-on {
+            display: block;
+        }
+
+        /* When OFF (unchecked) */
+        #notifToggle:not(:checked) ~ .left-dock .dock-notif .icon-notif-off {
+            display: block;
+            opacity: 0.65;
+        }
+
+        /* Sync Notifications Modal Content with Toggle State */
+        .notif-muted-banner {
+            display: block;
+        }
+
+        .notif-active-feed {
+            display: none;
+        }
+
+        #notifToggle:checked ~ .page-wrapper .notif-muted-banner {
+            display: none;
+        }
+
+        #notifToggle:checked ~ .page-wrapper .notif-active-feed {
+            display: block;
+        }
+
+        /* Main Content Wrapper */
+        .page-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1;
+        }
+
+        .dashboard-container {
+            max-width: 940px;
+        }
+
+        /* Hero & Ledger Styling using colors.css tokens */
+        .hero-section {
+            border-radius: 12px;
+        }
+
+        .ledger-panel {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background-color: rgba(80, 75, 56, 0.06);
+            border-bottom: 1px solid rgba(80, 75, 56, 0.18);
+        }
+
+        .complaint-row {
+            border-bottom: 1px solid rgba(80, 75, 56, 0.14);
+        }
+
+        .complaint-row:last-child {
+            border-bottom: none;
+        }
+
+        .issue-icon {
+            width: 42px;
+            height: 42px;
+            background-color: var(--bg-main);
+            border: 1px solid rgba(80, 75, 56, 0.22);
+            border-radius: 10px;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        /* Status Badges Harmonized with Palette */
+        .status-pill {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.32rem 0.75rem;
+            border-radius: 9999px;
+        }
+
+        .status-pending {
+            background-color: #f3e2a9;
+            color: #5c4308;
+            border: 1px solid rgba(92, 67, 8, 0.25);
+        }
+
+        .status-progress {
+            background-color: #d6e4e5;
+            color: #234347;
+            border: 1px solid rgba(35, 67, 71, 0.25);
+        }
+
+        .status-done {
+            background-color: #d3e4cd;
+            color: #254621;
+            border: 1px solid rgba(37, 70, 33, 0.25);
+        }
+
+        .notif-item {
+            border-bottom: 1px solid rgba(80, 75, 56, 0.12);
+        }
+
+        .notif-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Pure CSS Modal (:target) */
+        .css-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(80, 75, 56, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 1050;
+        }
+
+        .css-modal-overlay:target {
+            display: flex;
+        }
+
+        .css-modal-card {
+            width: 100%;
+            max-width: 480px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(80, 75, 56, 0.25);
+        }
+
+        .form-control-themed {
+            background-color: var(--bg-main);
+            color: var(--accent-highlight);
+            border: 1px solid rgba(80, 75, 56, 0.3);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+            font-family: var(--font-2);
+            font-size: 0.9rem;
+        }
+
+        .form-control-themed:focus {
+            outline: 2px solid rgba(80, 75, 56, 0.25);
+            border-color: var(--accent-highlight);
+        }
+
+        /* Footer */
+        .site-footer {
+            border-top: 1px solid rgba(80, 75, 56, 0.2);
+            font-size: 0.84rem;
+        }
+
+        /* Mobile Bottom Dock Adaptation */
+        @media (max-width: 767.98px) {
+            body {
+                padding-bottom: 72px;
+            }
+
+            .left-dock {
+                left: 50%;
+                top: auto;
+                bottom: 0.85rem;
+                transform: translateX(-50%);
+                flex-direction: row;
+                padding: 0.45rem 0.75rem;
+            }
+
+            .left-dock .dock-item:hover {
+                transform: translateY(-2px) scale(1.05);
+            }
+
+            .left-dock .dock-item::after {
+                left: 50%;
+                top: auto;
+                bottom: calc(100% + 8px);
+                transform: translateX(-50%);
+            }
+
+            .left-dock .dock-item:hover::after {
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+
+<body class="theme-bg font2">
+
+    <!-- Pure HTML/CSS Notification Preference Toggle (Default Checked = ON) -->
+    <input type="checkbox" id="notifToggle" class="d-none" checked>
+
+    <!-- Pure HTML/CSS Auth State Toggle for Preview (Replace with PHP session check later) -->
+    <input type="checkbox" id="authStateToggle" class="d-none">
+
+    <!-- Fixed Compact Top Navbar -->
+    <header class="top-navbar theme-navbar d-flex align-items-center justify-content-between gap-2">
+        <!-- Brand -->
+        <a class="navbar-brand font1 d-flex align-items-center gap-2" href="#">
+            <span class="brand-badge font3">CB</span>
+            <span>Complaint Box</span>
+        </a>
+
+        <!-- Center/Right Controls: Circular Search Bar + Notification Button + Auth Action -->
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <!-- Circular Search Bar (from buttons.css) -->
+            <form class="btn-search-bar" role="search" action="#" method="get">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="search" name="q" placeholder="Search complaints, hostels, or status..." aria-label="Search">
+            </form>
+
+            <!-- Notification Button on the right side of Search Bar -->
+            <a href="#notificationsModal" class="btn-circle" title="Notifications" aria-label="Notifications">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span class="notif-badge-dot" aria-hidden="true"></span>
+            </a>
+
+            <!-- Pure HTML/CSS Preview Switch for Logged-In vs Logged-Out -->
+            <label for="authStateToggle" class="auth-preview-label d-none d-md-inline-block font3"
+                title="Switch between Logged-Out and Logged-In view">
+                Toggle Auth
+            </label>
+
+            <!-- Circular Corners Login Button (from buttons.css) -->
+            <a class="btn-rect-curved btn-primary btn-circular-pill logged-out-only" href="login.html">Login</a>
+
+            <!-- Logged-In Profile Icon with Circle Image Button (from buttons.css) -->
+            <a class="btn-circle logged-in-only" href="profile.html" title="My Profile" aria-label="My Profile">
+                <img src="https://ui-avatars.com/api/?name=Student+User&background=504B38&color=F8F3D9&bold=true"
+                    alt="User Profile Avatar">
+            </a>
+        </div>
+    </header>
+
+    <!-- Left Floating Dock -->
+    <nav class="left-dock theme-navbar" aria-label="Quick Action Dock">
+        <!-- 1. Emergency Icon -> Redirects to emergencyPage.html -->
+        <a href="emergencyPage.html" class="btn-square-curved dock-item dock-emergency"
+            data-tooltip="Emergency" aria-label="Emergency">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </a>
+
+        <!-- 2. Personal Issues Icon -> Redirects to userOwnIssues.html -->
+        <a href="userOwnIssues.html" class="btn-square-curved dock-item"
+            data-tooltip="Personal Issues" aria-label="Personal Issues">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </a>
+
+        <!-- 3. Notification Toggle Icon (Default ON -> Receives Notifications; OFF -> Muted) -->
+        <label for="notifToggle" class="btn-square-curved dock-item dock-notif mb-0"
+            data-tooltip="Notifications: ON / OFF" aria-label="Toggle Notifications">
+            <!-- Bell Active Icon (Shown when ON) -->
+            <svg class="icon-notif-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <!-- Bell Off Icon (Shown when OFF) -->
+            <svg class="icon-notif-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                <path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path>
+                <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path>
+                <path d="M18 8a6 6 0 0 0-9.33-5"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+        </label>
+    </nav>
+
+    <!-- Main Content & Footer Wrapper -->
+    <div class="page-wrapper">
+        <main class="container dashboard-container py-4 py-md-5">
+
+            <!-- Section 1: Welcome Banner -->
+            <section class="hero-section theme-list p-4 mb-4">
+                <h1 class="h3 font1 fw-bold mb-1">Welcome to Complaint Box</h1>
+                <p class="mb-0 opacity-75">Track, upvote, and resolve hostel issues in one clean ledger.</p>
+            </section>
+
+            <!-- Section 2: Complaints Ledger Panel -->
+            <section class="ledger-panel theme-list">
+
+                <!-- Panel Header -->
+                <div class="panel-header d-flex flex-wrap align-items-center justify-content-between gap-2 px-4 py-3">
+                    <div>
+                        <h2 class="h5 font1 fw-bold mb-0">Community Complaints</h2>
+                        <small class="font3 opacity-75" id="complaintCount">Showing 6 of 6 results</small>
+                    </div>
+                    <a href="#addComplaintModal" class="btn-rect-curved btn-primary">
+                        <span>+</span> Add Complaint
+                    </a>
+                </div>
+
+                <!-- Complaints List -->
+                <ul class="list-unstyled mb-0" id="complaintList">
+
+                    <!-- Complaint Item 1 -->
+                    <li class="complaint-row theme-list-item d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-3 px-4 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center issue-icon">
+                                💧
+                            </div>
+                            <div>
+                                <div class="fw-semibold complaint-title">Water Leakage in Room 204</div>
+                                <small class="complaint-meta opacity-75">
+                                    <span class="fw-semibold">Hostel B</span> &middot; Filed 2 days ago
+                                </small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto ms-sm-0">
+                            <span class="status-pill status-pending">Pending</span>
+                            <button type="button" class="btn-square-curved" title="Upvote Me Too" aria-label="Upvote">
+                                👍
+                            </button>
+                            <span class="font3 small fw-semibold">12</span>
+                        </div>
+                    </li>
+
+                    <!-- Complaint Item 2 -->
+                    <li class="complaint-row theme-list-item d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-3 px-4 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center issue-icon">
+                                🍽️
+                            </div>
+                            <div>
+                                <div class="fw-semibold complaint-title">Mess Food Quality Concern</div>
+                                <small class="complaint-meta opacity-75">
+                                    <span class="fw-semibold">Hostel A</span> &middot; Filed 5 hours ago
+                                </small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto ms-sm-0">
+                            <span class="status-pill status-progress">In Progress</span>
+                            <button type="button" class="btn-square-curved is-active" title="Upvoted Me Too" aria-label="Upvoted">
+                                👍
+                            </button>
+                            <span class="font3 small fw-semibold">27</span>
+                        </div>
+                    </li>
+
+                    <!-- Complaint Item 3 -->
+                    <li class="complaint-row theme-list-item d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-3 px-4 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center issue-icon">
+                                📶
+                            </div>
+                            <div>
+                                <div class="fw-semibold complaint-title">Wi-Fi Not Working - Block B</div>
+                                <small class="complaint-meta opacity-75">
+                                    <span class="fw-semibold">Hostel B</span> &middot; Filed 4 days ago
+                                </small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto ms-sm-0">
+                            <span class="status-pill status-done">Done</span>
+                            <button type="button" class="btn-square-curved" title="Upvote Me Too" aria-label="Upvote">
+                                👍
+                            </button>
+                            <span class="font3 small fw-semibold">8</span>
+                        </div>
+                    </li>
+
+                    <!-- Complaint Item 4 -->
+                    <li class="complaint-row theme-list-item d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-3 px-4 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center issue-icon">
+                                🔊
+                            </div>
+                            <div>
+                                <div class="fw-semibold complaint-title">Noise Complaint - Night Hours</div>
+                                <small class="complaint-meta opacity-75">
+                                    <span class="fw-semibold">Hostel C</span> &middot; Filed 1 week ago
+                                </small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto ms-sm-0">
+                            <span class="status-pill status-pending">Pending</span>
+                            <button type="button" class="btn-square-curved" title="Upvote Me Too" aria-label="Upvote">
+                                👍
+                            </button>
+                            <span class="font3 small fw-semibold">3</span>
+                        </div>
+                    </li>
+
+                    <!-- Complaint Item 5 -->
+                    <li class="complaint-row theme-list-item d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-3 px-4 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center issue-icon">
+                                🪟
+                            </div>
+                            <div>
+                                <div class="fw-semibold complaint-title">Broken Window Lock</div>
+                                <small class="complaint-meta opacity-75">
+                                    <span class="fw-semibold">Hostel A</span> &middot; Filed 3 weeks ago
+                                </small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto ms-sm-0">
+                            <span class="status-pill status-progress">In Progress</span>
+                            <button type="button" class="btn-square-curved" title="Upvote Me Too" aria-label="Upvote">
+                                👍
+                            </button>
+                            <span class="font3 small fw-semibold">15</span>
+                        </div>
+                    </li>
+
+                    <!-- Complaint Item 6 -->
+                    <li class="complaint-row theme-list-item d-flex flex-wrap flex-sm-nowrap align-items-center justify-content-between gap-3 px-4 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center issue-icon">
+                                🧼
+                            </div>
+                            <div>
+                                <div class="fw-semibold complaint-title">Cleanliness Issue - Common Washroom</div>
+                                <small class="complaint-meta opacity-75">
+                                    <span class="fw-semibold">Hostel C</span> &middot; Filed 2 months ago
+                                </small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto ms-sm-0">
+                            <span class="status-pill status-done">Done</span>
+                            <button type="button" class="btn-square-curved" title="Upvote Me Too" aria-label="Upvote">
+                                👍
+                            </button>
+                            <span class="font3 small fw-semibold">5</span>
+                        </div>
+                    </li>
+
+                </ul>
+            </section>
+        </main>
+
+        <!-- Pure HTML/CSS Add Complaint Modal -->
+        <div class="css-modal-overlay" id="addComplaintModal" role="dialog" aria-modal="true"
+            aria-labelledby="addComplaintModalLabel">
+            <div class="css-modal-card theme-list">
+                <div class="panel-header d-flex align-items-center justify-content-between px-4 py-3">
+                    <h5 class="font1 fw-bold mb-0" id="addComplaintModalLabel">Report a Complaint</h5>
+                    <a href="#" class="btn-circle" aria-label="Close modal">&times;</a>
+                </div>
+                <div class="p-4">
+                    <form id="addComplaintForm" action="#" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="complaintTitle" class="form-label small fw-semibold">Title</label>
+                            <input type="text" class="form-control-themed" id="complaintTitle" name="title"
+                                placeholder="e.g. Water Leakage in Room 204" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="complaintDesc" class="form-label small fw-semibold">Description</label>
+                            <textarea class="form-control-themed" id="complaintDesc" name="description" rows="3"
+                                placeholder="Describe the issue clearly..." required></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label for="complaintProof" class="form-label small fw-semibold">Proof (photo)</label>
+                            <input type="file" class="form-control-themed" id="complaintProof" name="proof"
+                                accept="image/*" required>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="#" class="btn-rect-curved">Cancel</a>
+                            <button type="submit" class="btn-rect-curved btn-primary">Submit Complaint</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pure HTML/CSS Notifications Modal (Reflects Dock Notification Toggle State) -->
+        <div class="css-modal-overlay" id="notificationsModal" role="dialog" aria-modal="true"
+            aria-labelledby="notificationsModalLabel">
+            <div class="css-modal-card theme-list">
+                <div class="panel-header d-flex align-items-center justify-content-between px-4 py-3">
+                    <h5 class="font1 fw-bold mb-0" id="notificationsModalLabel">Notifications</h5>
+                    <a href="#" class="btn-circle" aria-label="Close notifications">&times;</a>
+                </div>
+
+                <!-- Shown when Dock Notification Toggle is OFF -->
+                <div class="notif-muted-banner p-4 text-center">
+                    <div class="fw-semibold mb-1">Notifications are turned OFF</div>
+                    <p class="small opacity-75 mb-3">You will not receive new alerts while muted.</p>
+                    <label for="notifToggle" class="btn-rect-curved btn-primary">Turn Notifications ON</label>
+                </div>
+
+                <!-- Shown when Dock Notification Toggle is ON -->
+                <div class="notif-active-feed">
+                    <div class="notif-item theme-list-item px-4 py-3">
+                        <div class="fw-semibold">Wi-Fi Issue Resolved</div>
+                        <div class="small opacity-75">Block B maintenance marked your complaint as Done.</div>
+                        <small class="font3 opacity-75">12 mins ago</small>
+                    </div>
+                    <div class="notif-item theme-list-item px-4 py-3">
+                        <div class="fw-semibold">Mess Food Quality Concern</div>
+                        <div class="small opacity-75">Status updated from Pending to In Progress.</div>
+                        <small class="font3 opacity-75">2 hours ago</small>
+                    </div>
+                    <div class="notif-item theme-list-item px-4 py-3">
+                        <div class="fw-semibold">+5 New "Me Too" Upvotes</div>
+                        <div class="small opacity-75">Students in Hostel B upvoted Water Leakage in Room 204.</div>
+                        <small class="font3 opacity-75">1 day ago</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="site-footer theme-navbar py-3 mt-4">
+            <div class="container dashboard-container d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <p class="mb-0">&copy; 2026&ndash;2027 CBox, Inc. &middot;
+                    <a href="#" class="text-decoration-none" style="color: var(--accent-highlight);">Privacy</a> &middot;
+                    <a href="#" class="text-decoration-none" style="color: var(--accent-highlight);">Terms</a>
+                </p>
+                <p class="mb-0">
+                    <a href="#" class="text-decoration-none fw-semibold" style="color: var(--accent-highlight);">
+                        Back to top &uarr;
+                    </a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+</body>
+
+</html>
