@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Space+Grotesk:wght@300..700&display=swap');
+
+:root {
+  --font-1: 'Baloo 2', cursive, sans-serif;
+  --font-2: 'Space Grotesk', sans-serif;
+  --font-3: 'JetBrains Mono', monospace;
+}
+
+/* Display / Headings - Baloo 2 */
+.font1 {
+  font-family: var(--font-1);
+}
+
+/* Body / UI - Space Grotesk */
+.font2 {
+  font-family: var(--font-2);
+}
+
+/* Code / Monospace - JetBrains Mono */
+.font3 {
+  font-family: var(--font-3);
+}

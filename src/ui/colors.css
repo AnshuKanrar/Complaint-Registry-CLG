@@ -1,0 +1,71 @@
+:root {
+  --bg-main: #F8F3D9;
+  --bg-list: #EBE5C2;
+  --bg-hover: #DED8B4;
+  --bg-navbar: #B9B28A;
+  --accent-highlight: #504B38;
+  --text-on-dark: #F8F3D9;
+}
+
+/* Page Background */
+.theme-bg {
+  background-color: var(--bg-main);
+  color: var(--accent-highlight);
+}
+
+/* Navbar */
+.theme-navbar {
+  background-color: var(--bg-navbar);
+  color: var(--accent-highlight);
+  border-bottom: 1px solid rgba(80, 75, 56, 0.2);
+}
+
+/* List & Container Background */
+.theme-list {
+  background-color: var(--bg-list);
+  color: var(--accent-highlight);
+  border: 1px solid rgba(80, 75, 56, 0.15);
+  border-radius: 6px;
+}
+
+/* Hover Darkening (for list rows, cards, or menu links) */
+.theme-list-item {
+  background-color: var(--bg-list);
+  color: var(--accent-highlight);
+  transition: background-color 0.2s ease;
+}
+
+.theme-list-item:hover,
+.theme-hover:hover {
+  background-color: var(--bg-hover);
+}
+
+/* Primary Highlight Button */
+.theme-btn-highlight {
+  background-color: var(--accent-highlight);
+  color: var(--text-on-dark);
+  border: 1px solid var(--accent-highlight);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.theme-btn-highlight:hover {
+  opacity: 0.9;
+}
+
+/* Secondary Button (uses list background + hover darkening) */
+.theme-btn-secondary {
+  background-color: var(--bg-list);
+  color: var(--accent-highlight);
+  border: 1px solid var(--accent-highlight);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.theme-btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
